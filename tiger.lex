@@ -78,7 +78,17 @@ nil         { adjust(); return NIL; }
 function    { adjust(); return FUNCTION; }
 var         { adjust(); return VAR; }
 type        { adjust(); return TYPE; }
+    /* ---------- string ---------- */
+\"([^\\\n]|\\.)*\" {
+    adjust();
+    int len = yyleng - 2;
+    char *s = (char*)checked_malloc(sizeof(char) * (len + 1));
+    strncpy(s, yytext + 1, len);
+    s[len] = '\0';
 
+    yylval.sval = String(s);
+    return STRING;
+}
     /* ---------- integers ---------- */
 
 [0-9]+ {

@@ -1,0 +1,4 @@
+        LE    1
+        GE    4
+       NEQ    7
+    ASSIGN   10
