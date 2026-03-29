@@ -165,7 +165,10 @@ void adjust(void)
     EM_error(EM_tokPos, "unclosed comment");
     return 0;
 }
-
+. {
+    BEGIN(INIT);
+    yyless(0);
+}
 <<EOF>> {
     return 0;
 }
