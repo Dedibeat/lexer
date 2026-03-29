@@ -1,6 +1,7 @@
 # ===== Executables =====
 a.out
 lextest
+lextestref
 *.exe
 
 # ===== Object files =====
