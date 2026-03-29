@@ -220,7 +220,7 @@
  SEMICOLON  646
         ID  665 diag2
     LBRACK  670
-        ID  671 r
+        ID  671 rSTRING  321 
       PLUS  672
        INT  673 7
      MINUS  674

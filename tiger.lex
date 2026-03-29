@@ -4,9 +4,6 @@
 #include "util.h"
 #include "tokens.h"
 #include "errormsg.h"
-// #include <iostream>
-// #define log(x) std::cout << #x << " = " << x << " "
-// #define logl(x) std::cout << #x << " = " << x << std::endl
 int charPos = 1;
 int bracketCount = 0;
 int yywrap(void)
@@ -20,20 +17,14 @@ void adjust(void)
     EM_tokPos = charPos;
     charPos += yyleng;
 }
-
-
 %}
 %x COMM
 %s INIT
 %%
 <INIT>{
 
-    /* ---------- whitespace ---------- */
-
     [ \t]+      { adjust(); }
     \n          { adjust(); EM_newline(); }
-
-    /* ---------- punctuation ---------- */
 
     ","         { adjust(); return COMMA; }
     ":"         { adjust(); return COLON; }
@@ -45,8 +36,6 @@ void adjust(void)
     "{"         { adjust(); return LBRACE; }
     "}"         { adjust(); return RBRACE; }
     "."         { adjust(); return DOT; }
-
-    /* ---------- operators ---------- */
 
     ":="        { adjust(); return ASSIGN; }
     "<>"        { adjust(); return NEQ; }
@@ -65,8 +54,6 @@ void adjust(void)
     "&"         { adjust(); return AND; }
     "|"         { adjust(); return OR; }
 
-    /* ---------- keywords ---------- */
-
     array       { adjust(); return ARRAY; }
     if          { adjust(); return IF; }
     then        { adjust(); return THEN; }
@@ -84,15 +71,22 @@ void adjust(void)
     function    { adjust(); return FUNCTION; }
     var         { adjust(); return VAR; }
     type        { adjust(); return TYPE; }
-    /* ---------- comment state management --------- */
+
+    "*/" {
+        adjust();
+        EM_error(EM_tokPos,"closing unopened comment");
+    }
+
     "/*" { 
-        /* printf("comment open at %d\n", charPos); */
         adjust(); 
         BEGIN COMM; 
         bracketCount++;
-        /* printf("cnt = %d\n", bracketCount); */
     }
-    /* ---------- string ---------- */
+
+    \"([^"\\\n]|\\.)*\n {
+        adjust();
+        EM_error(EM_tokPos,"unterminated string");
+    }
 
     \"([^"\\\n]|\\.)*\" {
         adjust();
@@ -109,6 +103,7 @@ void adjust(void)
                     case '\\': s[j++] = '\\'; break;
                     case '"':  s[j++] = '"'; break;
                     default:
+                        EM_error(EM_tokPos,"invalid escape sequence");
                         s[j++] = yytext[i];
                         break;
                 }
@@ -121,15 +116,11 @@ void adjust(void)
         return STRING;
     }
 
-    /* ---------- integers ---------- */
-
     [0-9]+ {
         adjust();
-        yylval.ival = atoi(yytext);
+        yylval.ival = strtol(yytext, NULL, 10);
         return INT;
     }
-
-    /* ---------- identifiers ---------- */
 
     [a-zA-Z][a-zA-Z0-9_]* {
         adjust();
@@ -137,8 +128,6 @@ void adjust(void)
         return ID;
     }
 
-    /* ---------- illegal character ---------- */
-    
     . {
         adjust();
         EM_error(EM_tokPos,"illegal token");
@@ -147,7 +136,6 @@ void adjust(void)
 
 <COMM>{
     "*/" {
-        /* printf("comment close at %d\n", charPos); */
         adjust(); 
         bracketCount--;
         if(bracketCount < 0) 
@@ -158,30 +146,26 @@ void adjust(void)
         {
             BEGIN(INIT); 
         }
-        /* printf("cnt = %d\n", bracketCount); */
     }
     "/*" { 
-        /* printf("comment open at %d\n", charPos); */
         adjust(); 
         BEGIN COMM; 
         bracketCount++;
-        /* printf("cnt = %d\n", bracketCount); */
+    }
+    \n {
+        adjust();
+        EM_newline();
     }
     . {   
-        /* printf("comment other at %d\n", charPos);  */
         adjust(); 
     }
 }
-.   { 
-        BEGIN(INIT);
-        // printf("cnt = %d\n", bracketCount); 
-        // printf("initial at %d\n", charPos); 
-        yyless(0); 
-}
+
 <COMM><<EOF>> {
     EM_error(EM_tokPos, "unclosed comment");
     return 0;
 }
+
 <<EOF>> {
     return 0;
 }
